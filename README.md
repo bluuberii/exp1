@@ -343,6 +343,168 @@ kubectl get pods                              (that pod gets deleted and gets re
 12.	Load balancing
 kubectl get endpoints profile          (10.1.0.11:80,10.1.0.6:80)
 
+Apply the Deployment
+---------------------------------------------------------------------------  
+Creates or updates the Kubernetes Deployment described in deployment.yaml.
+command : kubectl apply -f deployment.yaml
+
+
+Apply the Service 
+------------------------------------
+Creates or updates web-app-service.
+command : kubectl apply -f service.yaml
+
+
+Check Pods
+-------------------------------------
+Shows the status of the Pods.
+command : kubectl get pods
+
+
+Check Deployments 
+-----------------------------------------------------------
+Displays the Deployment's desired and actual replica counts.
+command : kubectl get deployments
+
+
+Check Services 
+------------------------------------------------------------------------
+Lists the Services and their types, ClusterIPs, external IPs and ports.
+command : kubectl get services
+
+
+Display Pod details 
+--------------------------------------
+kubectl get pods -o wide
+
+
+Describe the Service 
+----------------------------------------------------
+command : kubectl describe service web-app-service
+command : kubectl get endpointslices -l kubernetes.io/service-name=web-app-service
+
+
+load-balancing demonstration
+----------------------------------------------------------------------------------
+kubectl run test-client --image=curlimages/curl --restart=Never -it --rm -- sh
+
+
+creating request
+---------------------------------------------------
+for i in $(seq 1 20); do
+  echo "Request $i"
+  curl -s http://web-app-service
+  echo
+done
+
+
+Availability
+=================================
+
+Show that both Pods are running
+--------------------------------------
+command : kubectl get pods
+
+
+Start continuous requests
+------------------------------
+command : kubectl run test-client --image=curlimages/curl --restart=Never -it --rm -- sh
+
+while true; do
+  curl -s http://web-app-service
+  echo
+  sleep 1
+done
+
+
+Delete one Pod
+-------------------
+kubectl get pods
+kubectl delete pod YOUR_POD_NAME
+
+
+Observe automatic recovery
+-------------------------------
+command : kubectl get pods -w
+
+Verify that availability is restored
+----------------------------------------
+kubectl get deployments
+kubectl get pods
+kubectl get endpointslices -l kubernetes.io/service-name=web-app-service
+
+Expected observations:
+- The Deployment returns to two ready replicas.
+- The deleted Pod has been replaced by a new Pod.
+- The Service endpoints include the two ready backend Pods again.
+
+To scale up / down 
+—---------------------------------------------------------
+
+Increases the number of Pods from 2 to 5. 
+Command : kubectl scale deployment web-app-deployment --replicas=5 
+
+Verify scale up -------------------------------------- 
+command : kubectl get deployments 
+command : kubectl get pods -o wide 
+command : kubectl get endpointslices -l kubernetes.io/service-name=web-app-service 
+
+Check load balancing across 5 Pods
+ -------------------------------------- 
+command : kubectl run test-client --image=curlimages/curl --restart=Never -it --rm -- sh 
+
+for i in $(seq 1 20); do 
+ echo "Request $i" 
+ curl -s http://web-app-service 
+ echo 
+done 
+
+services
+apiVersion: v1
+kind: Service
+metadata:
+  name: web-app-service
+spec:
+  type: LoadBalancer
+  selector:
+    app: web-app
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 80
+
+	deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: web-app-deployment
+  labels:
+    app: web-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: web-app
+  template:
+    metadata:
+      labels:
+        app: web-app
+    spec:
+      containers:
+      - name: hello-web
+        image: nginxdemos/hello:plain-text
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+          limits:
+            cpu: "100m"
+            memory: "128Mi"
+
+
+
 
 
 
